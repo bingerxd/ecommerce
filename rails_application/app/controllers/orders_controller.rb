@@ -1,4 +1,6 @@
 class OrdersController < ApplicationController
+  before_action :find_order_and_check_state, only: [:submit_order, :reset_discount, :edit_discount, :update_discount, :add_item, :remove_item]
+
   def index
     @orders = Orders::Order.order("id DESC").page(params[:page]).per(10)
   end
@@ -129,5 +131,14 @@ class OrdersController < ApplicationController
 
   def capture_payment_cmd(order_id)
     Payments::CapturePayment.new(order_id: order_id)
+  end
+
+  def find_order_and_check_state
+    order = Orders::Order.find_by_uid(params[:id])
+
+    if order && order.state == "Submitted"
+      redirect_to order_path(params[:id]), alert: "You cannot perform this action on an already placed order."
+      return
+    end
   end
 end
